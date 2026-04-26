@@ -1,0 +1,20 @@
+{
+  "rules": [
+    {
+      "id": "PERF-001",
+      "severity": "MEDIUM",
+      "name": "Inefficient Loop",
+      "pattern": "for\\s*\\(.*in\\s+.*\\)\\s*{.*await",
+      "message": "Döngü içerisinde await kullanımı performansı düşürür.",
+      "solution": "Promise.all() kullanarak işlemleri paralel yürütmeyi deneyin."
+    },
+    {
+      "id": "PERF-002",
+      "severity": "LOW",
+      "name": "Console Log in Production",
+      "pattern": "console\\.log\\s*\\(",
+      "message": "Production aşamasında console.log kullanımı bellek tüketebilir.",
+      "solution": "Loglama için profesyonel bir kütüphane (Winston, Pino) kullanın veya logları temizleyin."
+    }
+  ]
+}
