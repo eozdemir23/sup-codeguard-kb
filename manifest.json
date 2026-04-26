@@ -1,0 +1,10 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2026-04-27",
+  "database_name": "CodeGuard Expert Rules",
+  "active_rulesets": [
+    "security.json",
+    "performance.json",
+    "best_practices.json"
+  ]
+}
