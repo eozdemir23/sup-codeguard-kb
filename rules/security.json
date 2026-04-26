@@ -1,0 +1,28 @@
+{
+  "rules": [
+    {
+      "id": "SEC-001",
+      "severity": "CRITICAL",
+      "name": "Hardcoded Credentials",
+      "pattern": "(api_key|secret|password|token)\\s*[:=]\\s*['\"].{8,}['\"]",
+      "message": "Kod içerisinde açık bir şekilde şifre veya API anahtarı bulundu!",
+      "solution": "Bu veriyi .env dosyasına taşıyın ve process.env kullanarak çağırın."
+    },
+    {
+      "id": "SEC-002",
+      "severity": "HIGH",
+      "name": "Unsafe Eval Usage",
+      "pattern": "eval\\s*\\(",
+      "message": "eval() fonksiyonu kullanımı ciddi güvenlik açıklarına (XSS) yol açabilir.",
+      "solution": "eval() yerine JSON.parse() veya güvenli mantıksal operatörler kullanın."
+    },
+    {
+      "id": "SEC-003",
+      "severity": "CRITICAL",
+      "name": "SQL Injection Risk",
+      "pattern": "\\.query\\s*\\(\\s*['\"].*\\$\\{.*\\}['\"]\\s*\\)",
+      "message": "Sorgu içinde template literal kullanımı SQL Injection riski taşır.",
+      "solution": "Parametreli sorgu (prepared statements) kullanın: query('SELECT...', [id])"
+    }
+  ]
+}
