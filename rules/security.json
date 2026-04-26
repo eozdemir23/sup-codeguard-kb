@@ -1,5 +1,6 @@
 {
   "rules": [
+    
     {
       "id": "SEC-GEN-001",
       "severity": "CRITICAL",
@@ -7,6 +8,166 @@
       "pattern": "(?i)(api_key|apikey|secret|token|auth_token|access_token|bearer|client_secret|private_key|api_secret|app_secret|app_key|appkey|vault_token|root_password)\\s*[:=]\\s*['\"][a-zA-Z0-9_\\-\\.\\~]{12,}['\"]",
       "message": "KRİTİK GÜVENLİK İHLALİ: Kod içerisinde hassas bir anahtar (Secret/Token) tespit edildi. Bu durum, projenizin kaynak koduna erişimi olan herhangi birinin sistemlerinize tam yetkiyle sızmasına neden olur. Özellikle açık kaynaklı projelerde bu hata, tüm altyapınızın dakikalar içinde ele geçirilmesiyle sonuçlanabilir.",
       "solution": "1. Bu satırı derhal silin. 2. Hassas verileri projenizin kök dizinindeki bir '.env' dosyasında saklayın. 3. '.env' dosyasını '.gitignore' dosyanıza ekleyerek repoya girmesini engelleyin. 4. Üretim (Production) ortamında AWS Secrets Manager veya HashiCorp Vault gibi profesyonel araçlar kullanın."
+    },
+    {
+      "id": "SEC-EXT-001",
+      "severity": "CRITICAL",
+      "name": "Exposed Private SSH Key",
+      "pattern": "-----BEGIN (RSA|OPENSSH|DSA|EC) PRIVATE KEY-----",
+      "message": "KRİTİK İHLAL: Kod içerisinde SSH özel anahtarı (Private Key) bulundu! Bu anahtarın ifşa olması, sunucularınıza parola sormadan tam yetkiyle erişilmesine neden olur.",
+      "solution": "Anahtarı derhal koddan silin. İfşa olan anahtarı sunucudaki 'authorized_keys' listesinden kaldırın ve yeni bir anahtar çifti oluşturun. Anahtarları 'vault' sistemlerinde saklayın."
+    },
+    {
+      "id": "SEC-EXT-002",
+      "severity": "CRITICAL",
+      "name": "Hardcoded Google API Key",
+      "pattern": "AIza[0-9A-Za-z-_]{35}",
+      "message": "GÜVENLİK RİSKİ: Google Cloud/Maps API anahtarı kod içerisine gömülmüş. Bu anahtarın çalınması, bütçenizin başkaları tarafından tüketilmesine ve kota aşımına yol açar.",
+      "solution": "Anahtarı '.env' dosyasına taşıyın. Ayrıca Google Cloud Console üzerinden bu anahtara 'HTTP Referrer' veya 'IP' kısıtlaması ekleyin."
+    },
+    {
+      "id": "SEC-EXT-003",
+      "severity": "HIGH",
+      "name": "Unsafe Deserialization Risk",
+      "pattern": "JSON\\.parse\\(.*?req\\.(body|query|params).*?\\)",
+      "message": "TEHLİKELİ AYRIŞTIRMA: Kullanıcıdan gelen ham verinin doğrudan JSON.parse ile işlenmesi, beklenmedik veri tipleriyle uygulamanın çökmesine veya mantıksal hatalara yol açabilir.",
+      "solution": "Veriyi parse etmeden önce tip kontrolü yapın veya 'Joi' / 'Zod' gibi şema doğrulama kütüphaneleri kullanarak gelen veriyi valide edin."
+    },
+    {
+      "id": "SEC-EXT-004",
+      "severity": "HIGH",
+      "name": "Insecure Redirect (Open Redirect)",
+      "pattern": "res\\.redirect\\(.*?req\\.(query|body).*?\\)",
+      "message": "YÖNLENDİRME HATASI: Kullanıcıdan alınan URL ile doğrudan yönlendirme yapılması (Open Redirect), kullanıcıların sizin siteniz üzerinden kimlik avı (phishing) sitelerine gönderilmesine neden olur.",
+      "solution": "Yönlendirme yapılacak URL'leri bir 'beyaz liste' (whitelist) ile kontrol edin veya sadece site içi (relative) yollara izin verin."
+    },
+    {
+      "id": "SEC-EXT-005",
+      "severity": "MEDIUM",
+      "name": "Sensitive Cookie: Missing HttpOnly Flag",
+      "pattern": "res\\.cookie\\(.*?(?!.*HttpOnly).*?\\)",
+      "message": "ÇEREZ GÜVENLİĞİ: Çerez tanımlanırken 'HttpOnly' bayrağı eksik bırakılmış. Bu, çerezin JavaScript ile okunabilmesine ve XSS saldırılarında çalınmasına davetiye çıkarır.",
+      "solution": "Çerez ayarlarınıza 'httpOnly: true' özelliğini ekleyin. Ayrıca hassas veriler için 'secure: true' (sadece HTTPS) kullanın."
+    },
+    {
+      "id": "SEC-EXT-006",
+      "severity": "HIGH",
+      "name": "Database: NoSQL Blind Injection",
+      "pattern": "\\{\\s*\\$ne\\s*:\\s*['\"].*?['\"]\\s*\\}",
+      "message": "SORGU MANİPÜLASYONU: MongoDB gibi NoSQL veritabanlarında kullanılan '$ne' (not equal) operatörü, saldırganların şifre bilmeden giriş yapmasına neden olabilir.",
+      "solution": "Kullanıcıdan gelen objeleri doğrudan veritabanı sorgusuna sokmayın. Girdileri her zaman string veya beklenen veri tipine zorlayın."
+    },
+    {
+      "id": "SEC-EXT-007",
+      "severity": "CRITICAL",
+      "name": "Exposed GitHub Personal Access Token",
+      "pattern": "ghp_[a-zA-Z0-9]{36}",
+      "message": "KRİTİK: GitHub Kişisel Erişim Token'ı (PAT) bulundu. Bu token ile repolarınıza erişilebilir, kodlarınız çalınabilir veya değiştirilebilir.",
+      "solution": "GitHub üzerinden token'ı hemen 'Revoke' edin (iptal edin). Yeni bir token oluşturup GitHub Secrets veya ortam değişkenleri kullanın."
+    },
+    {
+      "id": "SEC-EXT-008",
+      "severity": "HIGH",
+      "name": "Weak Encryption: Static IV usage",
+      "pattern": "crypto\\.createCipheriv\\(.*?['\"].*?['\"]\\s*,\\s*['\"].*?['\"]\\s*\\)",
+      "message": "ŞİFRELEME HATASI: Şifreleme sırasında sabit bir Başlatma Vektörü (IV) kullanılması, aynı metnin her zaman aynı şifreli çıktıyı vermesine (saldırı riskine) yol açar.",
+      "solution": "IV değerini her şifreleme işlemi için 'crypto.randomBytes(16)' ile rastgele oluşturun ve şifreli metinle birlikte saklayın."
+    },
+    {
+      "id": "SEC-EXT-009",
+      "severity": "MEDIUM",
+      "name": "Missing Security Header: Content-Security-Policy",
+      "pattern": "(?!.*helmet|.*Content-Security-Policy).*app\\.use\\(",
+      "message": "POLİTİKA EKSİKLİĞİ: Uygulamanızda CSP (Content Security Policy) başlığı bulunamadı. Bu, XSS ve veri enjeksiyon saldırılarına karşı korumasız olduğunuzu gösterir.",
+      "solution": "'helmet' paketini kullanarak temel güvenlik başlıklarını ekleyin ve özel bir CSP politikası tanımlayın."
+    },
+    {
+      "id": "SEC-EXT-010",
+      "severity": "HIGH",
+      "name": "Prototype Pollution Vulnerability",
+      "pattern": "obj\\[.*?\\]\\s*=\\s*.*?",
+      "message": "MANTIKSAL HATA: Kontrolsüz nesne atamaları 'Prototype Pollution' açığına yol açabilir. Saldırganlar tüm uygulamanın davranışını değiştirebilir.",
+      "solution": "Kullanıcı girdisini bir nesnenin key'i olarak kullanırken '__proto__' veya 'constructor' gibi kelimeleri filtreleyin."
+    },
+    {
+      "id": "SEC-EXT-011",
+      "severity": "CRITICAL",
+      "name": "Hardcoded Slack/Discord Webhook URL",
+      "pattern": "https:\\/\\/hooks\\.(slack|discord)\\.com\\/services\\/[A-Z0-9]+\\/[A-Z0-9]+\\/[A-Za-z0-9]+",
+      "message": "VERİ SIZINTISI: Webhook URL'si ifşa olmuş. Saldırganlar bu URL üzerinden kanallarınıza spam yapabilir veya gizli bildirimleri takip edebilir.",
+      "solution": "Webhook adreslerini '.env' dosyasında saklayın ve koda asla açık şekilde yazmayın."
+    },
+    {
+      "id": "SEC-EXT-012",
+      "severity": "MEDIUM",
+      "name": "Insecure Randomness: Math.random()",
+      "pattern": "Math\\.random\\(\\)",
+      "message": "GÜVENLİK NOTU: Güvenlik kritik işlemler (parola sıfırlama token'ı vb.) için Math.random() kullanılıyor. Bu fonksiyon tahmin edilebilir sonuçlar üretir.",
+      "solution": "Kriptografik olarak güvenli rastgele değerler için 'crypto.randomBytes()' veya 'crypto.getRandomValues()' kullanın."
+    },
+    {
+      "id": "SEC-EXT-013",
+      "severity": "HIGH",
+      "name": "Mail: Hardcoded SMTP Credentials",
+      "pattern": "(smtp|mail|sendgrid|mailgun).*?(user|pass|auth).*?['\"].+?['\"]",
+      "message": "KRİTİK: E-posta servis sağlayıcınızın kimlik bilgileri sızmış. Hesabınız üzerinden spam mail gönderilebilir veya mailleriniz okunabilir.",
+      "solution": "SMTP bilgilerini ortam değişkenlerine taşıyın ve SMTP şifrenizi hemen değiştirin."
+    },
+    {
+      "id": "SEC-EXT-014",
+      "severity": "MEDIUM",
+      "name": "Uncontrolled Resource Consumption (DoS)",
+      "pattern": "while\\s*\\(true\\)|for\\s*\\(\\s*;\\s*;\\s*\\)",
+      "message": "PERFORMANS RİSKİ: Sonsuz döngü veya kontrolsüz büyük döngüler sunucunuzu kilitleyerek Hizmet Dışı Bırakma (DoS) atağına neden olabilir.",
+      "solution": "Döngüler için mutlaka bir çıkış koşulu (timeout) veya maksimum limit belirleyin."
+    },
+    {
+      "id": "SEC-EXT-015",
+      "severity": "HIGH",
+      "name": "Insecure XML Parsing (XXE)",
+      "pattern": "xml2js|libxmljs|xmldom",
+      "message": "XML RİSKİ: XML ayrıştırıcılar varsayılan ayarlarda dış varlıklara (XXE) izin verebilir. Bu, sunucudaki dosyaların okunmasına neden olur.",
+      "solution": "XML parse işlemleri sırasında 'external entities' ve 'DTD' desteğini devre dışı bırakın."
+    },
+    {
+      "id": "SEC-EXT-016",
+      "severity": "MEDIUM",
+      "name": "Node.js Process Exit Exposure",
+      "pattern": "process\\.exit\\(\\)",
+      "message": "STABİLİTE HATASI: Kodun ortasında 'process.exit()' kullanımı uygulamanın aniden kapanmasına ve veri kayıplarına yol açabilir.",
+      "solution": "Uygulamayı kapatmak yerine hataları fırlatın (throw) veya kontrollü bir 'graceful shutdown' süreci yönetin."
+    },
+    {
+      "id": "SEC-EXT-017",
+      "severity": "CRITICAL",
+      "name": "Azure Storage Account Key Leak",
+      "pattern": "AccountKey=[a-zA-Z0-9+/]{88}",
+      "message": "BULUT RİSKİ: Azure Storage Account anahtarı bulundu. Tüm cloud depolama alanınız tehlike altında.",
+      "solution": "Anahtarı 'Azure Key Vault' sistemine taşıyın ve ifşa olan anahtarı Azure portalından 'Rotate' edin."
+    },
+    {
+      "id": "SEC-EXT-018",
+      "severity": "HIGH",
+      "name": "Unsafe Shell Scripting",
+      "pattern": "exec\\(['\"].*?rm\\s+-rf\\s+.*\\$\\{.*?\\}['\"]\\)",
+      "message": "YIKICI KOMUT: Dinamik değişkenlerle 'rm -rf' komutu çalıştırılıyor. Yanlış bir girdi tüm sunucuyu silebilir!",
+      "solution": "Dosya silme işlemleri için 'fs.unlink' gibi yerleşik ve güvenli kütüphaneleri tercih edin."
+    },
+    {
+      "id": "SEC-EXT-019",
+      "severity": "MEDIUM",
+      "name": "Hardcoded IP Address",
+      "pattern": "\\b(?:[0-9]{1,3}\\.){3}[0-9]{1,3}\\b",
+      "message": "MİMARİ HATASI: Kodun içine sabit IP adresi yazılmış. IP değişikliklerinde uygulamanız çalışmaz hale gelecektir.",
+      "solution": "Bunun yerine domain adı kullanın veya IP adreslerini konfigürasyon dosyalarına taşıyın."
+    },
+    {
+      "id": "SEC-EXT-020",
+      "severity": "LOW",
+      "name": "VAG Style Performance Flag",
+      "pattern": "launch_control\\s*[:=]\\s*true",
+      "message": "EĞLENCELİ NOT: Launch Control aktif! Koddaki bu bayrak performansı (veya stresi) artırabilir. VAG grubu severler için güzel bir dokunuş. 😉",
+      "solution": "Üretim ortamında (production) her şeyin stabil olduğundan emin ol, sonra gaza bas!"
     },
     {
       "id": "SEC-SQL-001",
