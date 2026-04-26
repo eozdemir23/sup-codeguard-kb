@@ -1,0 +1,36 @@
+{
+  "rules": [
+    {
+      "id": "BP-001",
+      "severity": "MEDIUM",
+      "name": "Nested Ternary Operators",
+      "pattern": "\\?.*\\?.*:.*:",
+      "message": "İç içe geçmiş ternary (üçlü) operatörler kodun okunabilirliğini bozar.",
+      "solution": "Bunun yerine 'if-else' blokları veya 'switch-case' kullanmayı deneyin."
+    },
+    {
+      "id": "BP-002",
+      "severity": "HIGH",
+      "name": "Node.js Sync Methods",
+      "pattern": "fs\\..+Sync\\s*\\(",
+      "message": "Senkron (Sync) dosya işlemleri Node.js event loop'u bloke eder.",
+      "solution": "fs.promises veya async/await ile asenkron versiyonları kullanın."
+    },
+    {
+      "id": "BP-003",
+      "severity": "MEDIUM",
+      "name": "React Missing Dependency Array",
+      "pattern": "useEffect\\s*\\(\\s*\\(\\s*\\)\\s*=>\\s*{[^}]*}\\s*\\)(?!\\s*,)",
+      "message": "useEffect kullanımı bağımlılık dizisi (dependency array) içermiyor.",
+      "solution": "Sonsuz döngüleri önlemek için en azından boş bir dizi [] ekleyin."
+    },
+    {
+      "id": "BP-004",
+      "severity": "LOW",
+      "name": "Magic Numbers",
+      "pattern": "===\\s*\\d{2,}|>\\s*\\d{2,}",
+      "message": "Kod içerisinde 'Magic Number' (açıklanmayan sayısal değer) tespit edildi.",
+      "solution": "Bu sayıyı anlamlı bir isme sahip sabit (CONST) bir değişkene atayın."
+    }
+  ]
+}
