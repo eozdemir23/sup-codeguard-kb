@@ -1,28 +1,100 @@
 {
   "rules": [
     {
-      "id": "SEC-001",
+      "id": "SEC-GEN-001",
       "severity": "CRITICAL",
-      "name": "Hardcoded Credentials",
-      "pattern": "(api_key|secret|password|token)\\s*[:=]\\s*['\"].{8,}['\"]",
-      "message": "Kod içerisinde açık bir şekilde şifre veya API anahtarı bulundu!",
-      "solution": "Bu veriyi .env dosyasına taşıyın ve process.env kullanarak çağırın."
+      "name": "Hardcoded Secret: Generic API/Private Key",
+      "pattern": "(?i)(api_key|apikey|secret|token|auth_token|access_token|bearer|client_secret|private_key|api_secret|app_secret|app_key|appkey|vault_token|root_password)\\s*[:=]\\s*['\"][a-zA-Z0-9_\\-\\.\\~]{12,}['\"]",
+      "message": "KRİTİK GÜVENLİK İHLALİ: Kod içerisinde hassas bir anahtar (Secret/Token) tespit edildi. Bu durum, projenizin kaynak koduna erişimi olan herhangi birinin sistemlerinize tam yetkiyle sızmasına neden olur. Özellikle açık kaynaklı projelerde bu hata, tüm altyapınızın dakikalar içinde ele geçirilmesiyle sonuçlanabilir.",
+      "solution": "1. Bu satırı derhal silin. 2. Hassas verileri projenizin kök dizinindeki bir '.env' dosyasında saklayın. 3. '.env' dosyasını '.gitignore' dosyanıza ekleyerek repoya girmesini engelleyin. 4. Üretim (Production) ortamında AWS Secrets Manager veya HashiCorp Vault gibi profesyonel araçlar kullanın."
     },
     {
-      "id": "SEC-002",
+      "id": "SEC-SQL-001",
+      "severity": "CRITICAL",
+      "name": "Injection: SQL Template Literal Vulnerability",
+      "pattern": "\\.(query|execute|run|all|get|select|insert|update|delete)\\s*\\(\\s*[`'\"].*\\$\\{.*\\}.*[`'\"]\\s*\\)",
+      "message": "YÜKSEK RİSK: Veritabanı sorgusu oluşturulurken Template Literal (${variable}) kullanılıyor. Bu yapı, SQL Injection saldırılarının bir numaralı sebebidir. Kötü niyetli bir kullanıcı, girdi alanına '1; DROP TABLE users' gibi komutlar yazarak tüm veritabanınızı silebilir veya yetkisiz verilere erişebilir.",
+      "solution": "Dizeleri birleştirmek yerine 'Parametreli Sorgular' (Prepared Statements) kullanın. Örnek: db.query('SELECT * FROM users WHERE email = ?', [userEmail]). Bu yöntemle veritabanı sürücüsü, girdiyi bir komut olarak değil, sadece ham veri olarak işleyecektir."
+    },
+    {
+      "id": "SEC-CMD-001",
+      "severity": "CRITICAL",
+      "name": "Remote Code Execution (RCE): OS Command Injection",
+      "pattern": "(child_process\\.(exec|spawn|fork|execSync)|\\bprocess\\.run\\b|\\bshell_exec\\b|\\bsystem\\b).*?\\$\\{",
+      "message": "SİSTEM SEVİYESİNDE TEHLİKE: İşletim sistemi komutları içerisinde kullanıcı kontrolündeki değişkenlerin kullanıldığı saptandı. Bir saldırgan, bu noktayı kullanarak sunucunuzda 'rm -rf /' gibi yıkıcı komutlar çalıştırabilir veya arka kapı (backdoor) açabilir.",
+      "solution": "1. Kullanıcı girdisini asla doğrudan shell komutlarına göndermeyin. 2. Girdileri çok sıkı bir 'allow-list' (izin verilenler listesi) kontrolünden geçirin. 3. Mümkünse shell komutu çalıştırmak yerine aynı işi yapan Node.js paketlerini (örneğin dosya işlemleri için 'fs' modülü) kullanın."
+    },
+    {
+      "id": "SEC-XSS-001",
       "severity": "HIGH",
-      "name": "Unsafe Eval Usage",
-      "pattern": "eval\\s*\\(",
-      "message": "eval() fonksiyonu kullanımı ciddi güvenlik açıklarına (XSS) yol açabilir.",
-      "solution": "eval() yerine JSON.parse() veya güvenli mantıksal operatörler kullanın."
+      "name": "XSS: Unsafe DOM Manipulation",
+      "pattern": "(innerHTML|outerHTML|dangerouslySetInnerHTML|\\.html\\s*\\()",
+      "message": "FRONTEND RİSKİ: Kullanıcı verilerini temizlemeden (sanitize) doğrudan HTML olarak DOM'a basmak, Cross-Site Scripting (XSS) saldırılarına kapı açar. Saldırganlar, diğer kullanıcıların tarayıcılarında zararlı JavaScript kodları çalıştırarak oturum çerezlerini çalabilir.",
+      "solution": "1. HTML içeriği yerine her zaman 'textContent' veya 'innerText' kullanın. 2. Eğer HTML render etmeniz şartsa, 'DOMPurify' gibi güvenilir bir kütüphane ile girdiyi mutlaka temizleyin. 3. Modern framework'lerin (React/Vue) sunduğu güvenli render yöntemlerini devre dışı bırakmayın."
     },
     {
-      "id": "SEC-003",
+      "id": "SEC-AWS-001",
       "severity": "CRITICAL",
-      "name": "SQL Injection Risk",
-      "pattern": "\\.query\\s*\\(\\s*['\"].*\\$\\{.*\\}['\"]\\s*\\)",
-      "message": "Sorgu içinde template literal kullanımı SQL Injection riski taşır.",
-      "solution": "Parametreli sorgu (prepared statements) kullanın: query('SELECT...', [id])"
+      "name": "Cloud Security: AWS Infrastructure Key Leak",
+      "pattern": "(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}",
+      "message": "BULUT ALTYAPI RİSKİ: Kod içerisinde AWS Access Key ID deseni bulundu. Bu anahtarın ifşa olması, AWS hesabınızdaki S3 kovalarının, EC2 sunucularının ve veritabanlarının kontrolünün başkalarına geçmesine neden olur.",
+      "solution": "1. Anahtarı koddan silin. 2. İfşa olan anahtarı AWS Console üzerinden hemen devre dışı bırakın (Revoke). 3. Sunucularınızda IAM Rollerini kullanarak 'anahtarsız' yetkilendirme yapısına geçin."
+    },
+    {
+      "id": "SEC-CRY-001",
+      "severity": "HIGH",
+      "name": "Cryptography: Legacy Hashing Algorithms",
+      "pattern": "(createHash\\(['\"]md5['\"]|createHash\\(['\"]sha1['\"]|\\bmd5\\(|\\bsha1\\()",
+      "message": "ZAYIF ŞİFRELEME: MD5 veya SHA1 gibi modası geçmiş algoritmalar tespit edildi. Bu algoritmalar 'Collision' (çakışma) saldırılarına karşı korumasızdır ve modern bilgisayarlar tarafından saniyeler içinde kırılabilirler.",
+      "solution": "Veri bütünlüğü için en az SHA-256 kullanın. Eğer parola saklıyorsanız bu algoritmaları kesinlikle kullanmayın; bunun yerine 'bcrypt', 'scrypt' veya 'argon2' gibi 'salt' destekleyen algoritmaları tercih edin."
+    },
+    {
+      "id": "SEC-JWT-001",
+      "severity": "HIGH",
+      "name": "Auth: Hardcoded JWT Signing Secret",
+      "pattern": "jwt\\.verify\\s*\\(.*?,\\s*['\"].*?['\"]\\s*\\)|jwt\\.sign\\s*\\(.*?,\\s*['\"].*?['\"]\\s*\\)",
+      "message": "YETKİLENDİRMEDEKİ ZAYIF HALKA: JWT imzalamak veya doğrulamak için kullanılan 'secret' dizesi kodun içine açıkça yazılmış. Bu gizli diziyi bilen herkes, istediği kullanıcı adına sahte token oluşturup sisteminize giriş yapabilir.",
+      "solution": "İmza anahtarını (Signing Key) asla kodda tutmayın. Güçlü, rastgele oluşturulmuş bir dizeyi ortam değişkeni olarak tanımlayın. Örn: 'jwt.verify(token, process.env.JWT_SECRET)'."
+    },
+    {
+      "id": "SEC-FILE-001",
+      "severity": "HIGH",
+      "name": "Insecure File Access: Path Traversal Risk",
+      "pattern": "fs\\.(readFile|writeFile|createReadStream).*?\\$\\{.*?\\}",
+      "message": "DOSYA SİSTEMİ RİSKİ: Dosya yolları oluşturulurken kullanıcı girdilerinin kontrolsüz kullanılması 'Path Traversal' açığına neden olur. Bir saldırgan '../../etc/passwd' gibi girdilerle sunucunuzdaki gizli dosyalara erişebilir.",
+      "solution": "1. Kullanıcı girdilerini doğrudan dosya yollarına eklemeyin. 2. 'path.basename()' kullanarak girdinin sadece dosya adı olduğundan emin olun. 3. Girdiyi bir 'allow-list' ile kontrol ederek sadece belirli klasörlere erişime izin verin."
+    },
+    {
+      "id": "SEC-NET-001",
+      "severity": "MEDIUM",
+      "name": "Network: Insecure HTTP Protocol",
+      "pattern": "http:\\/\\/(?!(localhost|127\\.0\\.0\\.1))[a-zA-Z0-9\\-\\.]+",
+      "message": "VERİ GİZLİLİĞİ: Dış dünya ile iletişimde HTTP protokolü kullanılıyor. Bu iletişim şifrelenmediği için 'Man-in-the-Middle' (Aradaki Adam) saldırılarıyla tüm trafik izlenebilir ve veriler çalınabilir.",
+      "solution": "Tüm ağ isteklerinde HTTPS protokolünü kullanın. Üretim ortamında HSTS (HTTP Strict Transport Security) başlıklarını kullanarak trafiği şifreli olmaya zorlayın."
+    },
+    {
+      "id": "SEC-CORS-001",
+      "severity": "MEDIUM",
+      "name": "Security Policy: Dangerous Wildcard CORS",
+      "pattern": "Access-Control-Allow-Origin.*\\*",
+      "message": "GÜVENLİK POLİTİKASI HATASI: CORS ayarlarında '*' (wildcard) kullanımı tespit edildi. Bu durum, internetteki herhangi bir web sitesinin sizin API'nizden veri çekmesine veya kullanıcılarınız adına işlem yapmasına olanak tanır.",
+      "solution": "Wildcard kullanmak yerine, sadece uygulamanızın çalıştığı domain adreslerini (Örn: 'https://app.ozdemir.com') içeren bir beyaz liste oluşturun."
+    },
+    {
+      "id": "SEC-EVAL-001",
+      "severity": "CRITICAL",
+      "name": "JavaScript: Dangerous Dynamic Code Execution",
+      "pattern": "(\\beval\\s*\\(|Function\\s*\\(|setTimeout\\s*\\(\\s*['\"].*['\"]|setInterval\\s*\\(\\s*['\"].*['\"])",
+      "message": "TEHLİKELİ FONKSİYON: 'eval()' veya dize tabanlı zamanlayıcılar kullanımı tespit edildi. Bu metotlar, herhangi bir dizeyi kod olarak çalıştırdığı için saldırganlar için açık bir kapı niteliğindedir.",
+      "solution": "Dinamik kod çalıştırma ihtiyacını nesne haritaları (object mapping) veya güvenli veri ayrıştırıcıları (JSON.parse) ile çözün. Asla dışarıdan gelen bir metni 'eval' içinde çalıştırmayın."
+    },
+    {
+      "id": "SEC-NOSQL-001",
+      "severity": "CRITICAL",
+      "name": "NoSQL Injection: MongoDB Operator Risk",
+      "pattern": "\\.(find|findOne|update|delete).*?\\$\\w+",
+      "message": "NOSQL RİSKİ: Sorgu içerisinde kontrol edilmeyen MongoDB operatörleri ($where, $gt vb.) kullanımı tespit edildi. Saldırganlar, şifre bilmeden giriş yapabilir veya tüm koleksiyonu sızdırabilir.",
+      "solution": "1. Kullanıcıdan gelen objeleri doğrudan sorguya sokmayın. 2. 'mongo-sanitize' gibi kütüphaneler kullanarak girdi içindeki '$' işaretli operatörleri temizleyin."
     }
   ]
 }
